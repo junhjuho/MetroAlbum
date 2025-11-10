@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "908299663129",
+    "project_id": "metrofunar-5b6d0",
+    "storage_bucket": "metrofunar-5b6d0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:908299663129:android:6f0d7ac5f4e3f0470ab788",
+        "android_client_info": {
+          "package_name": "com.DefaultCompany.MetroFunAR"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCe6TKC-O-rj67MLvnt3g4RDaI5KIF7PRU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
