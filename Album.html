@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo SNS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #fafafa;
+        }
+        .header {
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #dbdbdb;
+            position: sticky;
+            top: 0;
+        }
+        .header h1 {
+            text-align: center;
+            font-size: 24px;
+        }
+        .feed {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+        .post {
+            background: white;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #dbdbdb;
+        }
+        .post-header {
+            padding: 14px;
+            font-weight: 600;
+        }
+        .post img {
+            width: 100%;
+            display: block;
+        }
+        .post-actions {
+            padding: 12px 16px;
+        }
+        .like-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .likes-count {
+            padding: 0 16px 14px 16px;
+            font-weight: 600;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8e8e8e;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📸 Photo Feed</h1>
+    </div>
+
+    <div class="feed" id="feed">
+        <div class="loading">로딩 중...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, updateDoc, increment, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // ✅ Firebase 설정 (Firebase Hosting과 동일!)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCe6TKC-O-rj67MLvnt3g4RDaI5KIF7PRU",
+            authDomain: "metrofunar-5b6d0.firebaseapp.com",
+            projectId: "metrofunar-5b6d0",
+            storageBucket: "metrofunar-5b6d0.firebasestorage.app",
+            messagingSenderId: "908299663129",
+            appId: "1:908299663129:android:6f0d7ac5f4e3f0470ab788"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadFeed() {
+            const feedDiv = document.getElementById('feed');
+            
+            try {
+                const q = query(
+                    collection(db, "posts"), 
+                    orderBy("likes", "desc")
+                );
+                
+                const snapshot = await getDocs(q);
+                feedDiv.innerHTML = '';
+
+                if (snapshot.empty) {
+                    feedDiv.innerHTML = '<div class="loading">아직 게시물이 없습니다.</div>';
+                    return;
+                }
+
+                snapshot.forEach((docSnapshot) => {
+                    const post = docSnapshot.data();
+                    const postDiv = document.createElement('div');
+                    postDiv.className = 'post';
+                    postDiv.innerHTML = `
+                        <div class="post-header">${post.userName || 'Anonymous'}</div>
+                        <img src="${post.imageUrl}" />
+                        <div class="post-actions">
+                            <button class="like-btn" onclick="likePost('${docSnapshot.id}')">❤️</button>
+                        </div>
+                        <div class="likes-count">좋아요 ${post.likes || 0}개</div>
+                    `;
+                    feedDiv.appendChild(postDiv);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                feedDiv.innerHTML = '<div class="loading">로드 실패</div>';
+            }
+        }
+
+        window.likePost = async function(postId) {
+            const postRef = doc(db, "posts", postId);
+            await updateDoc(postRef, { likes: increment(1) });
+            loadFeed();
+        };
+
+        loadFeed();
+    </script>
+</body>
+</html>
