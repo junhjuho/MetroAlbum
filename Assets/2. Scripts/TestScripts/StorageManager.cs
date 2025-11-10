@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using Firebase;
 using Firebase.Extensions;
 using Firebase.Storage;
+using Firebase.Firestore;
 using System.Threading.Tasks;
 using System;
 using Unity.VisualScripting;
@@ -16,6 +17,8 @@ public class StorageManager : SingletonBehaviour<StorageManager>
     public Text text;
 
     private bool isFirebaseInitialized = false;
+
+    FirebaseFirestore db;
 
     void Start() 
     {
@@ -67,6 +70,8 @@ public class StorageManager : SingletonBehaviour<StorageManager>
             Debug.LogError($"Firebase initialization failed: {e.Message}");
             text.text = $"Firebase Error: {e.Message}";
         }
+
+        db = FirebaseFirestore.DefaultInstance;
     }
 
 
@@ -127,6 +132,67 @@ public class StorageManager : SingletonBehaviour<StorageManager>
 
                 OnDownloadComplete?.Invoke(texture);
             }
+        });
+    }
+
+    public void UploadImageWithMetadata(string fileName, byte[] imageData, Action<bool> callback = null)
+    {
+        if (!isFirebaseInitialized)
+        {
+            Debug.LogError("Firebase not initialized!");
+            callback?.Invoke(false);
+            return;
+        }
+
+        StorageReference fileRef = reference.Child(fileName);
+
+        // 1. Storage에 이미지 업로드
+        fileRef.PutBytesAsync(imageData).ContinueWithOnMainThread(uploadTask =>
+        {
+            if (uploadTask.IsFaulted || uploadTask.IsCanceled)
+            {
+                Debug.LogError("Upload failed");
+                callback?.Invoke(false);
+                return;
+            }
+
+            // 2. 다운로드 URL 가져오기
+            fileRef.GetDownloadUrlAsync().ContinueWithOnMainThread(urlTask =>
+            {
+                if (urlTask.IsFaulted || urlTask.IsCanceled)
+                {
+                    callback?.Invoke(false);
+                    return;
+                }
+
+                string downloadUrl = urlTask.Result.ToString();
+                Debug.Log($"Download URL: {downloadUrl}");
+
+                // 3. Firestore에 메타데이터 저장
+                var postData = new Dictionary<string, object>
+                {
+                    { "fileName", fileName },
+                    { "imageUrl", downloadUrl },
+                    { "userName", "User" + UnityEngine.Random.Range(1000, 9999) },
+                    { "likes", 0 },
+                    { "createdAt", Timestamp.GetCurrentTimestamp() }
+                };
+
+                db.Collection("posts").AddAsync(postData).ContinueWithOnMainThread(firestoreTask =>
+                {
+                    if (firestoreTask.IsCompleted && !firestoreTask.IsFaulted)
+                    {
+                        Debug.Log("Firestore 저장 완료!");
+                        text.text = "Upload complete!";
+                        callback?.Invoke(true);
+                    }
+                    else
+                    {
+                        Debug.LogError($"Firestore 저장 실패: {firestoreTask.Exception}");
+                        callback?.Invoke(false);
+                    }
+                });
+            });
         });
     }
 }

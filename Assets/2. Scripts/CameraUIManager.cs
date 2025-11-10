@@ -72,8 +72,19 @@ public class CameraUIManager : MonoBehaviour
     void SavePhoto()
     {
         Texture2D photo = captureManager.GetLastCapturedPhoto();
-        StorageManager.Instance.UploadGetDownLink($"Photo_{System.DateTime.Now:yyyyMMdd_HHmmss}.jpg", photo.EncodeToJPG(),
+
+        byte[] imageData = photo.EncodeToJPG();
+        string fileName = $"Photo_{System.DateTime.Now:yyyyMMdd_HHmmss}.jpg";
+        StorageManager.Instance.UploadGetDownLink(fileName, imageData,
           (link) => { Debug.Log("Link is : " + link); });
+
+        StorageManager.Instance.UploadImageWithMetadata(fileName, imageData, (success) =>
+        {
+            if (success)
+            {
+                Debug.Log("업로드 및 Firestore 저장 완료!");
+            }
+        });
     }
 
     // ===== �̺�Ʈ �ݹ� =====
